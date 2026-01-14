@@ -18,6 +18,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
   const nextId = useRef(0);
   const frameCount = useRef(0);
   const requestRef = useRef<number>();
+  const lastStateRef = useRef<'attract' | 'countdown' | 'game' | 'gameover'>('attract');
 
   // Hyperliquid Colors
   const COLORS = {
@@ -40,7 +41,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const spawnEntity = () => {
+  const spawnEntity = (isAttract = false) => {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const typeRand = Math.random();
@@ -50,12 +51,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
     else if (typeRand > 0.85) type = 'rekt';
     else if (typeRand > 0.45) type = 'sell';
 
+    const vx = isAttract ? (Math.random() - 0.5) * 4 : (Math.random() - 0.5) * 7;
+    const vy = isAttract ? (Math.random() - 0.5) * 4 : (-16 - Math.random() * 9);
+    const x = isAttract ? Math.random() * width : width / 2 + (Math.random() - 0.5) * (width * 0.7);
+    const y = isAttract ? Math.random() * height : height + 60;
+
     entities.current.push({
       id: nextId.current++,
-      x: width / 2 + (Math.random() - 0.5) * (width * 0.7),
-      y: height + 60,
-      vx: (Math.random() - 0.5) * 7,
-      vy: -16 - Math.random() * 9,
+      x,
+      y,
+      vx,
+      vy,
       size: type === 'hype' ? 45 : type === 'rekt' ? 40 : 35,
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * 0.12,
@@ -78,7 +84,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
   };
 
   const checkSlashes = (x1: number, y1: number, x2: number, y2: number) => {
-    if (!gameState.gameStarted || gameState.gameOver) return;
+    if (!gameState.gameStarted || gameState.gameOver || gameState.countdown !== null) return;
 
     entities.current.forEach(e => {
       if (e.isSliced) return;
@@ -109,21 +115,60 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
   };
 
   const update = () => {
-    if (gameState.gameOver || !gameState.gameStarted) return;
-    frameCount.current++;
-    
-    const spawnRate = Math.max(8, 45 - Math.floor(gameState.score / 25000));
-    if (frameCount.current % spawnRate === 0) {
-      spawnEntity();
+    const isAttractMode = !gameState.gameStarted && !gameState.gameOver && gameState.countdown === null;
+    const isCountdownMode = gameState.countdown !== null;
+    const isGameMode = gameState.gameStarted && !gameState.gameOver;
+
+    // Detect state changes to clear entities
+    let currentState: 'attract' | 'countdown' | 'game' | 'gameover' = 'attract';
+    if (isCountdownMode) currentState = 'countdown';
+    else if (isGameMode) currentState = 'game';
+    else if (gameState.gameOver) currentState = 'gameover';
+
+    if (currentState !== lastStateRef.current) {
+        if (currentState === 'countdown') {
+            entities.current = [];
+            particles.current = [];
+            trail.current = [];
+        }
+        lastStateRef.current = currentState;
     }
 
-    entities.current = entities.current.filter(e => {
-      e.x += e.vx;
-      e.y += e.vy;
-      e.vy += 0.28;
-      e.rotation += e.rotationSpeed;
-      return e.y < window.innerHeight + 120;
-    });
+    if (gameState.gameOver) return;
+
+    frameCount.current++;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    if (isAttractMode) {
+      // Periodic spawn for attract mode
+      if (frameCount.current % 40 === 0 && entities.current.length < 15) {
+        spawnEntity(true);
+      }
+
+      entities.current.forEach(e => {
+        e.x += e.vx;
+        e.y += e.vy;
+        e.rotation += e.rotationSpeed;
+
+        // Bounce off walls
+        if (e.x < 0 || e.x > width) e.vx *= -1;
+        if (e.y < 0 || e.y > height) e.vy *= -1;
+      });
+    } else if (isGameMode) {
+      const spawnRate = Math.max(8, 45 - Math.floor(gameState.score / 25000));
+      if (frameCount.current % spawnRate === 0) {
+        spawnEntity(false);
+      }
+
+      entities.current = entities.current.filter(e => {
+        e.x += e.vx;
+        e.y += e.vy;
+        e.vy += 0.28;
+        e.rotation += e.rotationSpeed;
+        return e.y < height + 120;
+      });
+    }
 
     particles.current = particles.current.filter(p => {
       p.x += p.vx;
@@ -137,7 +182,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
   };
 
   const drawHypeLogo = (ctx: CanvasRenderingContext2D, size: number) => {
-    // Custom path approximating the liquid blob HYPE logo provided
     ctx.beginPath();
     const w = size * 1.2;
     const h = size * 0.8;
@@ -191,7 +235,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
       if (e.type === 'buy') {
         ctx.fillStyle = COLORS.GREEN;
         ctx.shadowColor = COLORS.GREEN;
-        // Draw rounded rectangle for more liquid feel
         ctx.beginPath();
         ctx.roundRect(-e.size/2, -e.size/2, e.size, e.size, 8);
         ctx.fill();
@@ -246,7 +289,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ onGameOver, gameState, onUpdate
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
-  }, [gameState]);
+  }, [gameState.gameStarted, gameState.gameOver, gameState.countdown]);
 
   const handleInput = (x: number, y: number) => {
     const now = Date.now();

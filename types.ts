@@ -19,6 +19,7 @@ export interface GameState {
   highScore: number;
   gameStarted: boolean;
   sentiment: string;
+  countdown?: number | null;
 }
 
 export interface Particle {

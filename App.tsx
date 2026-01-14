@@ -12,20 +12,46 @@ const App: React.FC = () => {
     highScore: parseInt(localStorage.getItem('hyslash_high_score') || '0'),
     gameStarted: false,
     sentiment: "Awaiting Order Initialization...",
+    countdown: null
   });
 
   const [loadingSentiment, setLoadingSentiment] = useState(false);
   const [flash, setFlash] = useState<{ color: string, active: boolean }>({ color: '', active: false });
   const flashTimeoutRef = useRef<number | null>(null);
 
-  const startGame = () => {
-    setGameState(prev => ({
-      ...prev,
-      gameStarted: true,
-      gameOver: false,
+  const startCountdown = () => {
+    setGameState(prev => ({ 
+      ...prev, 
+      gameStarted: false, 
+      gameOver: false, 
       score: 0,
+      countdown: 3 
     }));
   };
+
+  const goHome = () => {
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: false,
+      gameOver: false,
+      score: 0,
+      countdown: null
+    }));
+  };
+
+  useEffect(() => {
+    if (gameState.countdown === null) return;
+
+    if (gameState.countdown > 0) {
+      const timer = setTimeout(() => {
+        setGameState(prev => ({ ...prev, countdown: (prev.countdown || 0) - 1 }));
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished (at 0)
+      setGameState(prev => ({ ...prev, countdown: null, gameStarted: true }));
+    }
+  }, [gameState.countdown]);
 
   const handleGameOver = async (finalScore: number) => {
     setGameState(prev => {
@@ -106,7 +132,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Start Screen */}
-      {!gameState.gameStarted && (
+      {!gameState.gameStarted && !gameState.gameOver && gameState.countdown === null && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-50 p-4">
           <div className="max-w-md w-full p-10 rounded-3xl border border-white/10 bg-[#060a08]/90 shadow-[0_0_120px_rgba(42,245,152,0.08)] text-center">
             <h1 className="text-7xl font-black mb-1 italic tracking-tighter leading-none uppercase">
@@ -145,7 +171,7 @@ const App: React.FC = () => {
             </div>
 
             <button 
-              onClick={startGame}
+              onClick={startCountdown}
               className="w-full py-5 btn-hyper rounded-2xl font-black text-xl uppercase tracking-widest active:scale-95 shadow-[0_10px_40px_-10px_rgba(42,245,152,0.5)]"
             >
               Initialize Position
@@ -154,9 +180,27 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Countdown Overlay - Only show 3, 2, 1 */}
+      {gameState.countdown !== null && gameState.countdown > 0 && (
+        <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none">
+          <div key={gameState.countdown} className="text-[12rem] font-black mono text-hyper-green glow-green italic animate-ping duration-1000">
+            {gameState.countdown}
+          </div>
+        </div>
+      )}
+
       {/* Game Over Screen */}
       {gameState.gameOver && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/95 backdrop-blur-xl z-50 p-4">
+          {/* Close/Home Button */}
+          <button 
+            onClick={goHome}
+            className="absolute top-8 right-8 w-12 h-12 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 flex items-center justify-center transition-all active:scale-90 z-[60]"
+            aria-label="Back to terminal"
+          >
+            <i className="fas fa-times text-xl text-white/60"></i>
+          </button>
+
           <div className="max-w-lg w-full p-10 rounded-3xl border border-red-900/50 bg-[#080101] shadow-[0_0_150px_rgba(239,68,68,0.1)] text-center animate-in fade-in zoom-in duration-500">
             <h2 className="text-7xl font-black text-red-600 mb-2 italic tracking-tighter">REKT</h2>
             <p className="text-red-500/40 uppercase tracking-[0.3em] font-bold text-xs mb-8">Liquidation Engine Triggered</p>
@@ -188,7 +232,7 @@ const App: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
-                onClick={startGame}
+                onClick={startCountdown}
                 className="flex-[1.5] py-5 bg-white text-black hover:bg-slate-200 transition-all rounded-2xl font-black uppercase tracking-widest text-sm active:scale-95"
               >
                 Re-Initialize

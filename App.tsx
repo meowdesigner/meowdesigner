@@ -18,8 +18,61 @@ const App: React.FC = () => {
   const [loadingSentiment, setLoadingSentiment] = useState(false);
   const [flash, setFlash] = useState<{ color: string, active: boolean }>({ color: '', active: false });
   const flashTimeoutRef = useRef<number | null>(null);
+  
+  // Audio context for procedural sound generation (ensures perfect sync and no external asset lag)
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const initAudio = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+  };
+
+  const playSlashSound = useCallback(() => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    // Create a high-frequency digital "zip" sound suitable for Hyperliquid's aesthetic
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    // Fast frequency sweep down to simulate a blade or digital cut
+    osc.frequency.setValueAtTime(1200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+
+    // Add a tiny bit of noise for a "crunchy" fill feel
+    const bufferSize = ctx.sampleRate * 0.05;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.05, ctx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    noise.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start();
+  }, []);
 
   const startCountdown = () => {
+    initAudio(); // Initialize audio on user interaction
     setGameState(prev => ({ 
       ...prev, 
       gameStarted: false, 
@@ -48,7 +101,6 @@ const App: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     } else {
-      // Countdown finished (at 0)
       setGameState(prev => ({ ...prev, countdown: null, gameStarted: true }));
     }
   }, [gameState.countdown]);
@@ -79,6 +131,9 @@ const App: React.FC = () => {
   const handleSlash = useCallback((color: string) => {
     setFlash({ color, active: true });
     
+    // Play the digital slash sound
+    playSlashSound();
+
     if (flashTimeoutRef.current) {
       window.clearTimeout(flashTimeoutRef.current);
     }
@@ -86,7 +141,7 @@ const App: React.FC = () => {
     flashTimeoutRef.current = window.setTimeout(() => {
       setFlash(prev => ({ ...prev, active: false }));
     }, 150);
-  }, []);
+  }, [playSlashSound]);
 
   const shareToX = () => {
     const text = `I just executed ${gameState.score.toLocaleString()} in volume on HYSLASH! 🟢⚡️\n\nMarket Sentiment: "${gameState.sentiment}"\n\nPure L1 execution. #Hyperliquid #HYPE $HYPE`;

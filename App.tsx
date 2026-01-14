@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import GameCanvas from './components/GameCanvas';
-import { GameState } from './types';
-import { getMarketSentiment } from './services/geminiService';
+import GameCanvas from './components/GameCanvas.tsx';
+import { GameState } from './types.ts';
+import { getMarketSentiment } from './services/geminiService.ts';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({

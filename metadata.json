@@ -1,0 +1,5 @@
+{
+  "name": "HYSLASH: Order Book Execution",
+  "description": "A high-stakes sub-millisecond execution game. Slash orders to build volume, avoid liquidations.",
+  "requestFramePermissions": []
+}

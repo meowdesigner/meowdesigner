@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HYSLASH: Order Book Execution</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+    :root {
+      --hyper-green: #2af598;
+      --hyper-purple: #9d4edd;
+      --hyper-bg: #040406;
+    }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--hyper-bg);
+      color: #e2e8f0;
+      overflow: hidden;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glow-green { filter: drop-shadow(0 0 10px rgba(42, 245, 152, 0.6)); }
+    .glow-purple { filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.6)); }
+    .text-hyper-green { color: var(--hyper-green); }
+    .bg-hyper-green { background-color: var(--hyper-green); }
+    .border-hyper-green { border-color: var(--hyper-green); }
+    
+    /* Custom button states */
+    .btn-hyper {
+      background-color: var(--hyper-green);
+      color: black;
+      transition: all 0.2s ease;
+    }
+    .btn-hyper:hover {
+      background-color: #1edb82;
+      box-shadow: 0 0 25px rgba(42, 245, 152, 0.4);
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

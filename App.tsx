@@ -64,14 +64,14 @@ const App: React.FC = () => {
 
   const shareToX = () => {
     const text = `I just executed ${gameState.score.toLocaleString()} in volume on HYSLASH! 🟢⚡️\n\nMarket Sentiment: "${gameState.sentiment}"\n\nPure L1 execution. #Hyperliquid #HYPE $HYPE`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
 
   return (
     <div className="relative w-screen h-screen bg-[#040406] select-none overflow-hidden text-white">
-      {/* Background Neon Overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#0c1a14_0%,_transparent_100%)] opacity-60 pointer-events-none" />
+      {/* Smooth Background Mesh */}
+      <div className="mesh-bg" />
 
       {/* Main Game Surface */}
       <GameCanvas 
@@ -195,9 +195,9 @@ const App: React.FC = () => {
               </button>
               <button 
                 onClick={shareToX}
-                className="flex-1 py-5 bg-[#1DA1F2] text-white hover:bg-[#1a8cd8] transition-all rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 active:scale-95"
+                className="flex-1 py-5 bg-black text-white hover:bg-zinc-900 border border-white/10 transition-all rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 active:scale-95"
               >
-                <i className="fab fa-twitter text-lg"></i>
+                <i className="fa-brands fa-x-twitter text-lg"></i>
                 Share Stats
               </button>
             </div>
